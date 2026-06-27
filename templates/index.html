@@ -2,12 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="theme-color" content="#2d4a3e" />
   <title>Retro Minds Listing Generator</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/static/css/app.css?v=5" />
+  <link rel="stylesheet" href="/static/css/app.css?v=7" />
 </head>
 <body>
   <div class="app-bg" aria-hidden="true"></div>
@@ -17,7 +20,7 @@
       <h1>Listing Generator</h1>
       <p class="header-sub">Pots, trellises &amp; decor → Square / Etsy</p>
     </div>
-    <nav class="app-nav" aria-label="Main">
+    <nav class="app-nav app-nav--desktop" aria-label="Main">
       <button type="button" data-view="new" class="active">New Item</button>
       <button type="button" data-view="library">Library</button>
       <button type="button" data-view="production">Production</button>
@@ -181,7 +184,7 @@
         </button>
       </div>
 
-      <div class="card" style="padding: 0; overflow: hidden;">
+      <div class="card table-scroll" style="padding: 0; overflow: hidden;">
         <table class="library-table">
           <thead>
             <tr>
@@ -262,6 +265,7 @@
             </label>
           </div>
         </div>
+        <div class="table-scroll">
         <table class="library-table production-table">
           <thead>
             <tr>
@@ -279,6 +283,7 @@
           </thead>
           <tbody id="production-analyzer-body"></tbody>
         </table>
+        </div>
         <div id="production-analyzer-empty" class="empty-state hidden">
           <p>No production data yet. Track a listing above to see costs here.</p>
         </div>
@@ -318,7 +323,7 @@
         </form>
       </div>
 
-      <div class="card" style="padding: 0; overflow: hidden;">
+      <div class="card table-scroll" style="padding: 0; overflow: hidden;">
         <table class="library-table filament-table">
           <thead>
             <tr>
@@ -399,6 +404,29 @@
     </div>
   </div>
 
-  <script src="/static/js/app.js?v=19"></script>
+  <nav class="app-nav app-nav--mobile" aria-label="Mobile navigation">
+    <button type="button" data-view="new" class="active">
+      <span class="nav-icon" aria-hidden="true">+</span>
+      <span class="nav-label">New</span>
+    </button>
+    <button type="button" data-view="library">
+      <span class="nav-icon" aria-hidden="true">☰</span>
+      <span class="nav-label">Library</span>
+    </button>
+    <button type="button" data-view="production">
+      <span class="nav-icon" aria-hidden="true">$</span>
+      <span class="nav-label">Costs</span>
+    </button>
+    <button type="button" data-view="inventory">
+      <span class="nav-icon" aria-hidden="true">◉</span>
+      <span class="nav-label">Filament</span>
+    </button>
+    <button type="button" data-view="settings">
+      <span class="nav-icon" aria-hidden="true">⚙</span>
+      <span class="nav-label">Square</span>
+    </button>
+  </nav>
+
+  <script src="/static/js/app.js?v=21"></script>
 </body>
 </html>

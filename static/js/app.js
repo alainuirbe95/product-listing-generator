@@ -99,26 +99,26 @@ function hideAlert() {
 
 function switchView(view) {
   $$(".panel").forEach((p) => p.classList.remove("active"));
-  $$("nav button").forEach((b) => b.classList.remove("active"));
+  $$("button[data-view]").forEach((b) => b.classList.remove("active"));
 
   if (view === "new") {
     $("#view-new").classList.add("active");
-    $('nav button[data-view="new"]').classList.add("active");
+    $$(`button[data-view="new"]`).forEach((b) => b.classList.add("active"));
   } else if (view === "library") {
     $("#view-library").classList.add("active");
-    $('nav button[data-view="library"]').classList.add("active");
+    $$(`button[data-view="library"]`).forEach((b) => b.classList.add("active"));
     loadLibrary();
   } else if (view === "production") {
     $("#view-production").classList.add("active");
-    $('nav button[data-view="production"]').classList.add("active");
+    $$(`button[data-view="production"]`).forEach((b) => b.classList.add("active"));
     loadProductionView();
   } else if (view === "inventory") {
     $("#view-inventory").classList.add("active");
-    $('nav button[data-view="inventory"]').classList.add("active");
+    $$(`button[data-view="inventory"]`).forEach((b) => b.classList.add("active"));
     loadFilamentInventory();
   } else if (view === "settings") {
     $("#view-settings").classList.add("active");
-    $('nav button[data-view="settings"]').classList.add("active");
+    $$(`button[data-view="settings"]`).forEach((b) => b.classList.add("active"));
     loadSquareExamples();
   } else if (view === "review") {
     $("#view-review").classList.add("active");
@@ -1603,7 +1603,7 @@ $("#library-search").addEventListener(
   debounce(() => loadLibrary(), 300)
 );
 
-$$("nav button[data-view]").forEach((btn) => {
+$$("button[data-view]").forEach((btn) => {
   btn.addEventListener("click", () => switchView(btn.dataset.view));
 });
 
