@@ -1,0 +1,24 @@
+{
+  "businessName": "Retro Minds Collective",
+  "website": "https://www.retromindscreations.com",
+  "productType": "3D printed plant accessories and home decor — pots, trellises, vases, wall planters, table lamps",
+  "materials": "Eco-friendly 3D printing filament (plant-based PLA)",
+  "audience": "Plant lovers, indoor gardeners, modern home decor shoppers",
+  "tone": "Modern, friendly, design-forward. Highlight 3D printing, drainage, eco-friendly materials, and practical plant care.",
+  "namingRules": {
+    "pot": "Use a short creative name in curly quotes plus Pot, e.g. \"Serik\" Pot or \"Uldol\" Pot",
+    "vase": "Use a short creative name in curly quotes plus Vase, e.g. \"Lunor\" Vase",
+    "trellis": "Use a descriptive name ending with Plant Trellis, e.g. LEGO Inspired Plant Trellis or Natural Plant Trellis",
+    "wall_planter": "Use a descriptive name like Wall Planter - Arches",
+    "table_lamp": "Use a creative product name like Soru Table Lamp"
+  },
+  "descriptionBullets": [
+    "3D printed using eco-friendly, plant-based materials",
+    "Sleek modern design with effective drainage (when applicable)",
+    "Made to order — slight variations are normal for 3D printed items",
+    "Recommended for indoor use"
+  ],
+  "careNotes": "Recommended for indoor use. Avoid prolonged direct sunlight or excessive heat, which may cause fading or warping.",
+  "titleKeywords": ["3d printed", "plant pot", "planter", "trellis", "vase", "home decor", "modern", "minimalist", "indoor plant"],
+  "etsyTitleGuidance": "Write a keyword-rich Etsy SEO title up to 140 characters. Start with the design or product name, then stack searchable phrases shoppers actually type: 3D printed, planter, indoor plant, succulent, drainage, modern home decor, etc. Include opening diameter, height, or dimensions when provided in attributes. Use natural readable phrasing — not comma-only keyword spam. For pots and vases, keep the quoted creative name near the front (e.g. \"Nori\" Plant Pot 3D Printed...)."
+}

@@ -1,0 +1,70 @@
+{
+  "imported_at": "2026-06-13T00:00:00+00:00",
+  "source_file": "retromindscreations.com",
+  "items": [
+    {
+      "item_name": "\"Serik\" Pot",
+      "category_id": "pot",
+      "square_category": "Pots",
+      "description": "The 'Serik' Pot combines a sleek modern design with durable, eco-friendly materials. Its efficient drainage system ensures optimal plant health, making it a functional and stylish addition to any space.",
+      "price": 11.97,
+      "modifiers": [
+        { "key": "color", "label": "Color", "value": "Black, Red, Royal blue, White, Maroon, Gold, Green, Terracota, Tan, Ivory White, Purple, Pink, Brown", "enabled": true },
+        { "key": "opening_diameter", "label": "Opening Diameter", "value": "3.5\", 4.5\", 5.5\"", "enabled": true }
+      ]
+    },
+    {
+      "item_name": "\"Uldol\" Pot",
+      "category_id": "pot",
+      "square_category": "Pots",
+      "description": "The Uldol Pot is expertly crafted from eco-friendly materials and 3D printed for detailed precision. Its sleek, modern design is paired with effective drainage, ensuring optimal plant health. A versatile addition to any indoor or outdoor space, it combines functionality with style.",
+      "price": 11.97,
+      "modifiers": [
+        { "key": "color", "label": "Color", "value": "Black, Red, Royal blue, White, Maroon, Gold, Green, Terracota, Tan, Ivory White, Purple, Pink, Brown", "enabled": true },
+        { "key": "opening_diameter", "label": "Opening Diameter", "value": "3.5\", 4.5\", 5.5\"", "enabled": true }
+      ]
+    },
+    {
+      "item_name": "LEGO Inspired Plant Trellis",
+      "category_id": "trellis",
+      "square_category": "Trellises",
+      "description": "The LEGO Inspired Plant Trellis combines creative gardening with a fun building experience. Measuring 12 by 6 inches, its functional design supports plant growth while adding a unique touch to your garden.",
+      "price": 7.47,
+      "modifiers": [
+        { "key": "color", "label": "Color", "value": "Black, Royal blue, Green, Terracota, Tan, Ivory White, Purple, Pink", "enabled": true },
+        { "key": "dimensions", "label": "Dimensions", "value": "12\" x 6\"", "enabled": true }
+      ]
+    },
+    {
+      "item_name": "\"Lunor\" Vase",
+      "category_id": "vase",
+      "square_category": "Vases",
+      "description": "Crafted from sustainable materials and 3D printed for precision, this vase features a modern design with efficient drainage, perfect for nurturing your plants. Its unique aesthetic complements any space effortlessly. 9\" TALL",
+      "price": 15.47,
+      "modifiers": [
+        { "key": "color", "label": "Color", "value": "Black, Red, Royal blue, White, Maroon, Gold, Green, Terracota, Tan, Ivory White, Purple, Pink, Brown", "enabled": true },
+        { "key": "height", "label": "Height", "value": "9\" TALL", "enabled": true }
+      ]
+    },
+    {
+      "item_name": "Wall Planter - Arches",
+      "category_id": "wall_planter",
+      "square_category": "Pots",
+      "description": "3D Printed Wall Planter – Modern Geometric Hanging Plant Pot. Bring life to your walls with this stylish 3D-printed wall planter. Features unique geometric textured design, lightweight durable construction, built-in drainage, perfect for succulents and small houseplants. Made from durable eco-friendly 3D printing filament with a matte finish. Designed for indoor use.",
+      "price": 14.47,
+      "modifiers": [
+        { "key": "color", "label": "Color", "value": "Black, Red, Royal blue, White, Gold, Green, Terracota, Tan, Ivory White, Purple, Pink", "enabled": true }
+      ]
+    },
+    {
+      "item_name": "Natural Plant Trellis",
+      "category_id": "trellis",
+      "square_category": "Trellises",
+      "description": "A clean, nature-inspired plant trellis for indoor climbing plants. 3D printed from eco-friendly materials to support healthy plant growth with a minimalist look.",
+      "price": 7.47,
+      "modifiers": [
+        { "key": "color", "label": "Color", "value": "Black, Royal blue, Green, Terracota, Tan, Ivory White, Purple, Pink", "enabled": true }
+      ]
+    }
+  ]
+}

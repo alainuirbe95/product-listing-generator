@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Retro Minds Listing Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/css/app.css?v=5" />
+</head>
+<body>
+  <div class="app-bg" aria-hidden="true"></div>
+  <header class="app-header">
+    <div class="brand">
+      <p class="brand-eyebrow">Retro Minds Collective</p>
+      <h1>Listing Generator</h1>
+      <p class="header-sub">Pots, trellises &amp; decor → Square / Etsy</p>
+    </div>
+    <nav class="app-nav" aria-label="Main">
+      <button type="button" data-view="new" class="active">New Item</button>
+      <button type="button" data-view="library">Library</button>
+      <button type="button" data-view="production">Production</button>
+      <button type="button" data-view="inventory">Filament</button>
+      <button type="button" data-view="settings">Square Catalog</button>
+    </nav>
+  </header>
+
+  <main>
+    <div id="global-alert" class="alert alert-error hidden"></div>
+
+    <!-- NEW ITEM -->
+    <section id="view-new" class="panel active">
+      <form id="new-item-form">
+        <div class="card">
+          <h2>OpenAI API Key</h2>
+          <label for="openai-api-key">API Key</label>
+          <input
+            id="openai-api-key"
+            name="openai_api_key"
+            type="password"
+            autocomplete="off"
+            placeholder="sk-…"
+          />
+          <p class="field-hint" id="openai-key-hint">
+            Paste your key here to generate. Saved in this browser only — not sent anywhere except OpenAI.
+          </p>
+        </div>
+
+        <div class="card">
+          <h2>Photos</h2>
+          <div id="dropzone" class="dropzone">
+            <p><strong>Drag & drop</strong> product photos here</p>
+            <p>or click to browse</p>
+            <input id="file-input" type="file" accept="image/*" multiple hidden />
+          </div>
+          <div id="upload-previews" class="preview-grid"></div>
+        </div>
+
+        <div class="card">
+          <h2>Item Details</h2>
+          <div class="grid-2">
+            <div>
+              <label for="item-name">Design Name</label>
+              <input id="item-name" type="text" required placeholder="Serik" />
+              <p class="field-hint" id="item-name-hint">Pots use quoted names like “Serik” Pot</p>
+            </div>
+            <div>
+              <label for="category">Category</label>
+              <select id="category" required></select>
+            </div>
+            <div>
+              <label for="price">Price ($)</label>
+              <input id="price" type="number" step="0.01" min="0" placeholder="11.97" />
+            </div>
+            <div>
+              <label for="sku">SKU</label>
+              <input id="sku" type="text" placeholder="POT-SERIK" />
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Square Variations</h2>
+          <p class="field-hint" style="margin-top: 0;">
+            Click to select colors, opening diameters, and other options for this listing. Only selected values are exported and shown in preview.
+          </p>
+          <div id="modifiers-container"></div>
+          <p class="field-hint" id="studio-prompt-hint"></p>
+        </div>
+
+        <button id="generate-btn" type="submit" class="btn btn-primary">Generate Listing</button>
+      </form>
+    </section>
+
+    <!-- REVIEW -->
+    <section id="view-review" class="panel">
+      <div class="toolbar">
+        <button type="button" class="btn btn-secondary" id="back-to-library">← Back to Library</button>
+        <span id="review-status" class="status-badge"></span>
+      </div>
+
+      <div class="card">
+        <h2>Images</h2>
+        <div id="review-images" class="image-compare"></div>
+      </div>
+
+      <div class="card">
+        <h2>Listing Copy</h2>
+        <label for="shop-title">Listing title</label>
+        <input id="shop-title" type="text" maxlength="140" />
+        <p class="field-hint">Short catalog name — design name plus category, e.g. &quot;Nori&quot; Pot. Used on Square.</p>
+
+        <label for="etsy-title">Etsy shop title</label>
+        <input id="etsy-title" type="text" maxlength="140" />
+        <p class="field-hint">Keyword-rich title for your Etsy listing — generated automatically on new items.</p>
+
+        <label for="description">Description</label>
+        <textarea id="description"></textarea>
+
+        <label for="tags-input">Tags (comma-separated)</label>
+        <input id="tags-input" type="text" />
+        <div id="tags-preview" class="tag-input"></div>
+      </div>
+
+      <div class="card">
+        <h2>Details</h2>
+        <div class="grid-2">
+          <div>
+            <label for="review-item-name">Design Name</label>
+            <input id="review-item-name" type="text" />
+          </div>
+          <div>
+            <label for="review-category">Category</label>
+            <select id="review-category"></select>
+          </div>
+          <div>
+            <label for="review-price">Price ($)</label>
+            <input id="review-price" type="number" step="0.01" min="0" />
+          </div>
+          <div>
+            <label for="review-sku">SKU</label>
+            <input id="review-sku" type="text" />
+          </div>
+        </div>
+        <div id="review-modifiers"></div>
+      </div>
+
+      <div class="card">
+        <h2>Production specs</h2>
+        <p class="field-hint" style="margin-top: 0;">
+          Print time, filament, infill, and list price per variation.
+        </p>
+        <div id="review-production"></div>
+        <button type="button" id="open-production-tab-btn" class="btn btn-secondary btn-sm">
+          Open in Production tab
+        </button>
+      </div>
+
+      <button type="button" id="save-btn" class="btn btn-primary">Save</button>
+    </section>
+
+    <!-- LIBRARY -->
+    <section id="view-library" class="panel">
+      <div class="toolbar">
+        <input id="library-search" type="text" placeholder="Search name, title, SKU…" />
+        <select id="filter-category">
+          <option value="">All categories</option>
+        </select>
+        <select id="filter-status">
+          <option value="">All statuses</option>
+          <option value="ready">Ready</option>
+          <option value="draft">Draft</option>
+          <option value="generating">Generating</option>
+        </select>
+        <button type="button" id="delete-btn" class="btn btn-danger" disabled>
+          Delete Selected
+        </button>
+        <button type="button" id="export-btn" class="btn btn-primary" disabled>
+          Export Selected to Square CSV
+        </button>
+      </div>
+
+      <div class="card" style="padding: 0; overflow: hidden;">
+        <table class="library-table">
+          <thead>
+            <tr>
+              <th><input type="checkbox" id="select-all" /></th>
+              <th></th>
+              <th>Name</th>
+              <th>Category</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="library-body"></tbody>
+        </table>
+        <div id="library-empty" class="empty-state hidden">
+          <p>No items yet.</p>
+          <button type="button" class="link-btn" data-view-link="new">Create your first listing →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- PRODUCTION -->
+    <section id="view-production" class="panel">
+      <div class="card">
+        <h2>Cost settings</h2>
+        <p class="field-hint" style="margin-top: 0;">
+          Total cost = (grams ÷ 1000 × $/kg) + (hours × labor $/hr) + (hours × electricity $/hr).
+          Costs update live as you change these values.
+        </p>
+        <div class="grid-3">
+          <div>
+            <label for="filament-price">Filament price ($/kg)</label>
+            <input id="filament-price" type="number" step="0.01" min="0" />
+          </div>
+          <div>
+            <label for="labor-rate">Labor rate ($/hr)</label>
+            <input id="labor-rate" type="number" step="0.01" min="0" placeholder="0.45" />
+          </div>
+          <div>
+            <label for="electricity-rate">Electricity ($/hr)</label>
+            <input id="electricity-rate" type="number" step="0.01" min="0" placeholder="0 = ignore" />
+          </div>
+        </div>
+        <button type="button" id="save-production-settings-btn" class="btn btn-secondary">
+          Save cost settings
+        </button>
+      </div>
+
+      <div class="card">
+        <h2>Track a listing</h2>
+        <p class="field-hint" style="margin-top: 0;">
+          Log slicer stats and list price per size — e.g. Nori 4.5&quot; → 7.5 hrs, 282 g, $12.97.
+          For pots, specs and prices usually depend on opening diameter, not color.
+        </p>
+        <div class="toolbar production-toolbar">
+          <select id="production-item-select">
+            <option value="">Select a listing…</option>
+          </select>
+          <button type="button" id="save-production-btn" class="btn btn-primary" disabled>
+            Save production data
+          </button>
+        </div>
+        <div id="production-editor" class="production-editor-empty">
+          <p class="field-hint">Choose a listing to enter print specs for each variation.</p>
+        </div>
+      </div>
+
+      <div class="card" style="padding: 0; overflow: hidden;">
+        <div class="production-analyzer-header">
+          <h2>Cost analyzer</h2>
+          <div class="toolbar">
+            <input id="production-search" type="text" placeholder="Search listings…" />
+            <select id="production-filter-category">
+              <option value="">All categories</option>
+            </select>
+            <label class="checkbox-inline">
+              <input type="checkbox" id="production-tracked-only" />
+              Tracked only
+            </label>
+          </div>
+        </div>
+        <table class="library-table production-table">
+          <thead>
+            <tr>
+              <th>Listing</th>
+              <th>Variation</th>
+              <th>Hours</th>
+              <th>Filament (g)</th>
+              <th>Infill</th>
+              <th>Material</th>
+              <th>Labor</th>
+              <th>Total cost</th>
+              <th>List price</th>
+              <th>Margin</th>
+            </tr>
+          </thead>
+          <tbody id="production-analyzer-body"></tbody>
+        </table>
+        <div id="production-analyzer-empty" class="empty-state hidden">
+          <p>No production data yet. Track a listing above to see costs here.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- FILAMENT INVENTORY -->
+    <section id="view-inventory" class="panel">
+      <div class="card">
+        <h2>1 kg Filament Spools</h2>
+        <p class="field-hint" style="margin-top: 0;">
+          Track full spools by color. Add when you receive orders; subtract one when you open a spool.
+          Click column headers to sort. <span class="stock-indicator stock-alert" style="vertical-align: middle;">!</span> out of stock ·
+          <span class="stock-indicator stock-warning" style="vertical-align: middle;">!</span> low (1 left)
+        </p>
+        <div class="filament-toolbar">
+          <p id="filament-total" class="filament-total">Total spools: —</p>
+          <button type="button" id="filament-order-btn" class="btn btn-secondary">Generate order</button>
+        </div>
+
+        <form id="filament-add-form" class="filament-add-form">
+          <div class="grid-3">
+            <div>
+              <label for="filament-color">Color</label>
+              <input id="filament-color" type="text" list="filament-color-options" placeholder="Red" required />
+            </div>
+            <div>
+              <label for="filament-qty">Quantity to add</label>
+              <input id="filament-qty" type="number" min="1" step="1" value="1" required />
+            </div>
+            <div class="filament-add-actions">
+              <label>&nbsp;</label>
+              <button type="submit" class="btn btn-primary">Add spools</button>
+            </div>
+          </div>
+          <datalist id="filament-color-options"></datalist>
+        </form>
+      </div>
+
+      <div class="card" style="padding: 0; overflow: hidden;">
+        <table class="library-table filament-table">
+          <thead>
+            <tr>
+              <th>
+                <button type="button" class="sortable-th" data-sort="color_name">
+                  Color <span class="sort-indicator"></span>
+                </button>
+              </th>
+              <th>
+                <button type="button" class="sortable-th" data-sort="quantity">
+                  Spools on hand <span class="sort-indicator"></span>
+                </button>
+              </th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="filament-body"></tbody>
+        </table>
+        <div id="filament-empty" class="empty-state hidden">
+          <p>No filament tracked yet. Add a color above — e.g. 2 Red spools when an order arrives.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SQUARE CATALOG -->
+    <section id="view-settings" class="panel">
+      <div class="card">
+        <h2>Square Catalog Examples</h2>
+        <p class="field-hint">
+          Your live catalog is on Square at
+          <a href="https://www.retromindscreations.com/" target="_blank" rel="noopener">retromindscreations.com</a>.
+          Import your Square item library export so AI copy matches your existing listings.
+        </p>
+        <p id="examples-status" class="alert alert-info">Loading…</p>
+        <ol class="setup-steps">
+          <li>Square Dashboard → Items → Item library → Actions → Export Library</li>
+          <li>Upload the CSV below to refresh examples</li>
+        </ol>
+        <input id="square-import-input" type="file" accept=".csv,.xlsx" hidden />
+        <button type="button" id="square-import-btn" class="btn btn-secondary">Import Square CSV</button>
+      </div>
+
+      <div class="card">
+        <h2>Loaded Examples</h2>
+        <div id="examples-list"></div>
+      </div>
+    </section>
+  </main>
+
+  <div id="filament-order-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="filament-order-title">
+    <div class="modal-backdrop" data-close-filament-order></div>
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="filament-order-title">Filament order</h2>
+        <button type="button" class="modal-close" data-close-filament-order aria-label="Close">×</button>
+      </div>
+      <div id="filament-order-body" class="modal-body"></div>
+      <div class="modal-actions">
+        <button type="button" id="filament-order-copy-btn" class="btn btn-secondary">Copy list</button>
+        <button type="button" class="btn btn-primary" data-close-filament-order>Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="preview-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="preview-title">
+    <div class="modal-backdrop" data-close-preview></div>
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="preview-title">Listing preview</h2>
+        <button type="button" class="modal-close" data-close-preview aria-label="Close">×</button>
+      </div>
+      <div id="preview-body" class="modal-body"></div>
+      <div class="modal-actions">
+        <button type="button" id="preview-download-btn" class="btn btn-secondary hidden">Download image</button>
+        <button type="button" id="preview-edit-btn" class="btn btn-secondary">Edit listing</button>
+        <button type="button" class="btn btn-primary" data-close-preview>Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/app.js?v=19"></script>
+</body>
+</html>

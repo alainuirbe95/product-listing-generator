@@ -1,0 +1,12 @@
+{
+  "colorsFull": [
+    "Black", "Red", "Royal blue", "White", "Maroon", "Gold", "Green",
+    "Terracota", "Tan", "Ivory White", "Purple", "Pink", "Brown"
+  ],
+  "colorsTrellis": [
+    "Black", "Royal blue", "Green", "Terracota", "Tan", "Ivory White", "Purple", "Pink"
+  ],
+  "potOpeningDiameters": ["3.5\"", "4.5\"", "5.5\""],
+  "vaseHeights": ["7\" TALL", "8\" TALL", "9\" TALL"],
+  "trellisDimensions": ["12\" x 6\"", "12\" x 8\""]
+}

@@ -1,0 +1,112 @@
+{
+  "categories": [
+    {
+      "id": "pot",
+      "name": "Pot",
+      "squareCategory": "Pots",
+      "defaultPrice": 11.97,
+      "itemNamePlaceholder": "Serik",
+      "titleSuffix": "Pot",
+      "studioImagePrompt": "This is a 3D printed plant pot or planter. Photograph the exact pot shape from a slight three-quarter angle so the opening, walls, and base are clearly visible. Show the cylindrical or rounded planter form, drainage details if visible, and matte PLA filament texture. The pot should read as a standalone empty planter ready for a catalog listing.",
+      "listingPrompt": "Focus on the pot as a functional planter: modern design, eco-friendly 3D printed PLA, drainage for plant health, indoor/outdoor versatility. Mention opening diameter if provided. Keep copy similar in length to existing pot listings like \"Serik\" Pot or \"Uldol\" Pot.",
+      "defaultModifiers": [
+        { "key": "color", "label": "Color", "defaultValue": "White", "enabled": true, "optionSet": "colorsFull" },
+        { "key": "opening_diameter", "label": "Opening Diameter", "defaultValue": "3.5\"", "enabled": true, "optionSet": "potOpeningDiameters" }
+      ]
+    },
+    {
+      "id": "wall_planter",
+      "name": "Wall Planter",
+      "squareCategory": "Pots",
+      "defaultPrice": 14.47,
+      "itemNamePlaceholder": "Wall Planter - Arches",
+      "titleSuffix": "",
+      "studioImagePrompt": "This is a 3D printed wall-mounted planter. Photograph the exact piece so the wall-mount bracket, geometric face, and planter cavity are visible. Show the flat back or mounting side if present in the original. Emphasize the modern geometric texture and hanging planter silhouette. Do not add a wall, plant, or hardware unless they appear in the original photo.",
+      "listingPrompt": "Focus on wall-mounted use: saves space, geometric modern design, lightweight 3D printed construction, drainage, ideal for succulents and small houseplants. You may use bullet points for features and what's included, similar to the Wall Planter - Arches listing style.",
+      "defaultModifiers": [
+        { "key": "color", "label": "Color", "defaultValue": "White", "enabled": true, "optionSet": "colorsFull" }
+      ]
+    },
+    {
+      "id": "trellis",
+      "name": "Plant Trellis",
+      "squareCategory": "Trellises",
+      "defaultPrice": 7.47,
+      "itemNamePlaceholder": "Natural Plant Trellis",
+      "titleSuffix": "",
+      "studioImagePrompt": "This is a 3D printed plant trellis for climbing houseplants. Photograph the exact flat or low-profile trellis design full-frame, showing the complete silhouette, decorative pattern, and any stakes or legs that insert into soil. Emphasize the thin profile and structural cutouts. Do not add plants, moss poles, or pots unless they are in the original photo.",
+      "listingPrompt": "Focus on plant support: helps climbing plants grow, creative decorative pattern, compact size for indoor pots, 3D printed eco-friendly PLA. Mention dimensions if provided (typical trellises are around 12 x 6 inches). Match the concise style of trellis listings like LEGO Inspired Plant Trellis or Natural Plant Trellis.",
+      "defaultModifiers": [
+        { "key": "color", "label": "Color", "defaultValue": "Ivory White", "enabled": true, "optionSet": "colorsTrellis" },
+        { "key": "dimensions", "label": "Dimensions", "defaultValue": "12\" x 6\"", "enabled": true, "optionSet": "trellisDimensions" }
+      ]
+    },
+    {
+      "id": "vase",
+      "name": "Vase",
+      "squareCategory": "Vases",
+      "defaultPrice": 15.47,
+      "itemNamePlaceholder": "Lunor",
+      "titleSuffix": "Vase",
+      "studioImagePrompt": "This is a 3D printed vase or plant vase. Photograph the exact vessel with emphasis on height, elegant silhouette, rim opening, and curved or angular profile. Show the full vase from a slight angle so depth and form are clear. Matte PLA texture, catalog-ready empty vase. Do not add flowers or plants unless in the original photo.",
+      "listingPrompt": "Focus on the vase as decor and plant vessel: modern aesthetic, sustainable 3D printed materials, drainage if applicable, height/size if provided. Match listings like \"Lunor\" Vase — refined, design-forward, not overly long.",
+      "defaultModifiers": [
+        { "key": "color", "label": "Color", "defaultValue": "White", "enabled": true, "optionSet": "colorsFull" },
+        { "key": "height", "label": "Height", "defaultValue": "9\" TALL", "enabled": true, "optionSet": "vaseHeights" }
+      ]
+    },
+    {
+      "id": "watering_can",
+      "name": "Watering Can",
+      "squareCategory": "Watering Cans",
+      "defaultPrice": 12.97,
+      "itemNamePlaceholder": "Mini Watering Can",
+      "titleSuffix": "",
+      "studioImagePrompt": "This is a 3D printed watering can. Photograph the exact object showing the spout, handle, and body clearly from a three-quarter angle. Emphasize functional form and printable layer texture. Do not add water or plants unless in the original photo.",
+      "listingPrompt": "Focus on practical plant care: easy pouring, comfortable handle, compact size for houseplants, 3D printed durable PLA. Mention capacity or dimensions only if provided in attributes.",
+      "defaultModifiers": [
+        { "key": "color", "label": "Color", "defaultValue": "White", "enabled": true, "optionSet": "colorsFull" }
+      ]
+    },
+    {
+      "id": "table_lamp",
+      "name": "Table Lamp",
+      "squareCategory": "Table Lamps",
+      "defaultPrice": 18.47,
+      "itemNamePlaceholder": "Soru Table Lamp",
+      "titleSuffix": "",
+      "studioImagePrompt": "This is a 3D printed table lamp. Photograph the exact lamp showing base, body, and shade or light element as they appear in the original. Capture the sculptural form and how it sits on a flat surface. Do not turn the lamp on or add glowing light effects unless visible in the original. No room staging.",
+      "listingPrompt": "Focus on home decor and ambient lighting: sculptural 3D printed design, modern desk or bedside use, unique layered texture. Do not claim electrical certifications or bulb specs unless provided.",
+      "defaultModifiers": [
+        { "key": "color", "label": "Color", "defaultValue": "White", "enabled": true, "optionSet": "colorsFull" }
+      ]
+    },
+    {
+      "id": "containers_trays",
+      "name": "Containers & Trays",
+      "squareCategory": "Containers and Trays",
+      "defaultPrice": 9.97,
+      "itemNamePlaceholder": "Catch Tray",
+      "titleSuffix": "",
+      "studioImagePrompt": "This is a 3D printed container, tray, or catch saucer. Photograph from a slight overhead or three-quarter angle to show the shallow depth, rim, and flat base. Emphasize clean edges and usable interior surface. Do not add pots or plants unless in the original photo.",
+      "listingPrompt": "Focus on organization and plant care utility: catches water runoff, pairs with pots, durable 3D printed PLA, minimalist look. Keep copy short and practical.",
+      "defaultModifiers": [
+        { "key": "color", "label": "Color", "defaultValue": "White", "enabled": true, "optionSet": "colorsFull" }
+      ]
+    },
+    {
+      "id": "home_decor",
+      "name": "Home Decor",
+      "squareCategory": "Home",
+      "defaultPrice": 12.97,
+      "itemNamePlaceholder": "Sculptural Decor Piece",
+      "titleSuffix": "",
+      "studioImagePrompt": "This is a 3D printed home decor object or sculptural piece. Photograph the exact shape full-frame with clear form, texture, and proportions. Center the object and show all distinctive design features from the original photo. Do not add room staging or unrelated props.",
+      "listingPrompt": "Focus on sculptural home decor: modern 3D printed art object, unique layered texture, shelf or desk display. Adapt tone to the object without assuming plant-related use unless obvious from the name.",
+      "defaultModifiers": [
+        { "key": "color", "label": "Color", "defaultValue": "White", "enabled": true, "optionSet": "colorsFull" },
+        { "key": "dimensions", "label": "Dimensions", "defaultValue": "", "enabled": false }
+      ]
+    }
+  ]
+}
