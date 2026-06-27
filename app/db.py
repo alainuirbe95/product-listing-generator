@@ -100,6 +100,9 @@ def _migrate_schema(conn: sqlite3.Connection) -> None:
     columns = {row[1] for row in conn.execute("PRAGMA table_info(items)").fetchall()}
     if "production" not in columns:
         conn.execute("ALTER TABLE items ADD COLUMN production TEXT NOT NULL DEFAULT '{}'")
+    for col in ("uploaded_etsy", "uploaded_meta", "uploaded_tiktok", "uploaded_website"):
+        if col not in columns:
+            conn.execute(f"ALTER TABLE items ADD COLUMN {col} INTEGER NOT NULL DEFAULT 0")
 
     conn.execute(
         """
@@ -158,6 +161,10 @@ def new_id() -> str:
     return str(uuid.uuid4())
 
 
+def _row_bool(row: sqlite3.Row, key: str) -> bool:
+    return bool(row[key]) if key in row.keys() else False
+
+
 def row_to_item(row: sqlite3.Row) -> dict[str, Any]:
     return {
         "id": row["id"],
@@ -173,6 +180,10 @@ def row_to_item(row: sqlite3.Row) -> dict[str, Any]:
         "status": row["status"],
         "primary_image_id": row["primary_image_id"],
         "production": json.loads(row["production"]) if "production" in row.keys() else {},
+        "uploaded_etsy": _row_bool(row, "uploaded_etsy"),
+        "uploaded_meta": _row_bool(row, "uploaded_meta"),
+        "uploaded_tiktok": _row_bool(row, "uploaded_tiktok"),
+        "uploaded_website": _row_bool(row, "uploaded_website"),
         "created_at": row["created_at"],
         "updated_at": row["updated_at"],
     }

@@ -168,7 +168,83 @@ function mediaUrl(filePath) {
   return `media/${filePath}`;
 }
 
+function apiUrl(path) {
+  const clean = path.startsWith("/") ? path.slice(1) : path;
+  const base = window.location.pathname.replace(/\/?$/, "/");
+  return `${base}${clean}`;
+}
+
 const STYLED_IMAGE_CATEGORIES = new Set(["pot", "vase"]);
+
+const STORE_UPLOAD_FIELDS = [
+  { key: "uploaded_etsy", label: "Etsy" },
+  { key: "uploaded_meta", label: "Meta" },
+  { key: "uploaded_tiktok", label: "TikTok" },
+  { key: "uploaded_website", label: "Website" },
+];
+
+function renderPreviewStoreUploads(item) {
+  return `
+    <div class="preview-section preview-store-uploads">
+      <h3>Uploaded to store</h3>
+      <p class="field-hint store-upload-hint">Check each platform after you manually list this item.</p>
+      <div class="store-upload-checks">
+        ${STORE_UPLOAD_FIELDS.map(
+          ({ key, label }) => `
+          <label class="store-upload-check">
+            <input
+              type="checkbox"
+              class="store-upload-checkbox"
+              data-field="${key}"
+              ${item[key] ? "checked" : ""}
+            />
+            <span>${escapeAttr(label)}</span>
+          </label>
+        `
+        ).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function syncItemStoreUploadFlags(itemId, data) {
+  const idx = state.libraryItems.findIndex((i) => i.id === itemId);
+  if (idx < 0) return;
+  STORE_UPLOAD_FIELDS.forEach(({ key }) => {
+    if (key in data) state.libraryItems[idx][key] = data[key];
+  });
+}
+
+function bindPreviewStoreUploads(itemId) {
+  $("#preview-body").querySelectorAll(".store-upload-checkbox").forEach((cb) => {
+    cb.addEventListener("change", () => saveStoreUploadFlag(itemId, cb.dataset.field, cb.checked, cb));
+  });
+}
+
+async function saveStoreUploadFlag(itemId, field, checked, checkbox) {
+  hideAlert();
+  checkbox.disabled = true;
+  try {
+    const res = await fetch(apiUrl(`/api/items/${itemId}`), {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ [field]: checked }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Could not save upload status");
+    syncItemStoreUploadFlags(itemId, data);
+    if (state.currentItem?.id === itemId) {
+      STORE_UPLOAD_FIELDS.forEach(({ key }) => {
+        if (key in data) state.currentItem[key] = data[key];
+      });
+    }
+  } catch (err) {
+    checkbox.checked = !checked;
+    showAlert(err.message);
+  } finally {
+    checkbox.disabled = false;
+  }
+}
 
 function categorySupportsStyledImage(categoryId) {
   return STYLED_IMAGE_CATEGORIES.has(categoryId);
@@ -301,7 +377,7 @@ function categoryLabel(id) {
 }
 
 async function loadCategories() {
-  const res = await fetch("/api/categories");
+  const res = await fetch(apiUrl("/api/categories"));
   state.categories = await res.json();
 
   const categorySelect = $("#category");
@@ -329,7 +405,7 @@ async function loadCategories() {
 
 async function applyCategoryDefaults(categoryId) {
   renderModifiers(categoryId);
-  const res = await fetch(`/api/categories/${categoryId}/defaults`);
+  const res = await fetch(apiUrl(`/api/categories/${categoryId}/defaults`));
   if (!res.ok) return;
   const defaults = await res.json();
 
@@ -603,7 +679,7 @@ $("#new-item-form").addEventListener("submit", async (e) => {
   state.selectedFiles.forEach((file) => formData.append("images", file));
 
   try {
-    const res = await fetch("/api/items/generate", {
+    const res = await fetch(apiUrl("/api/items/generate"), {
       method: "POST",
       headers: openaiKeyHeaders(),
       body: formData,
@@ -1020,7 +1096,7 @@ function buildLocalVariationRows(item) {
 }
 
 async function loadProductionSettings() {
-  const res = await fetch("/api/production/settings");
+  const res = await fetch(apiUrl("/api/production/settings"));
   state.productionSettings = await res.json();
   $("#filament-price").value = state.productionSettings.filamentPricePerKg;
   $("#labor-rate").value = state.productionSettings.laborRatePerHour || "";
@@ -1028,7 +1104,7 @@ async function loadProductionSettings() {
 }
 
 async function loadProductionItemSelect(selectedId = "") {
-  const res = await fetch("/api/items");
+  const res = await fetch(apiUrl("/api/items"));
   const items = await res.json();
   const select = $("#production-item-select");
   select.innerHTML =
@@ -1054,7 +1130,7 @@ async function loadProductionEditor(itemId) {
     return;
   }
 
-  const res = await fetch(`/api/items/${itemId}/production`);
+  const res = await fetch(apiUrl(`/api/items/${itemId}/production`));
   const data = await res.json();
   if (!res.ok) throw new Error(data.detail || "Could not load production data");
 
@@ -1064,7 +1140,7 @@ async function loadProductionEditor(itemId) {
     ? `<p class="field-hint">Grouped by <strong>${escapeAttr(data.group_by_label)}</strong> — one row per physical size (color ignored).</p>`
     : "";
   editor.innerHTML = `<p class="field-hint"><strong>${escapeAttr(data.item_label)}</strong></p>${groupHint}<div id="production-editor-table"></div>`;
-  const itemRes = await fetch(`/api/items/${itemId}`);
+  const itemRes = await fetch(apiUrl(`/api/items/${itemId}`));
   const item = await itemRes.json();
   state.productionListPrice = item.price ?? null;
   renderProductionTable($("#production-editor-table"), data.variations, item.price);
@@ -1080,7 +1156,7 @@ async function loadProductionAnalyzer() {
   if (search) params.set("search", search);
   if (trackedOnly) params.set("tracked_only", "true");
 
-  const res = await fetch(`/api/production/analyzer?${params}`);
+  const res = await fetch(apiUrl(`/api/production/analyzer?${params}`));
   const data = await res.json();
   state.productionSettings = data.settings;
 
@@ -1290,7 +1366,7 @@ function renderReviewImages(item) {
       formData.append("image_id", btn.dataset.id);
       formData.append("openai_api_key", apiKey);
       try {
-        const res = await fetch(`/api/items/${item.id}/regenerate-image`, {
+        const res = await fetch(apiUrl(`/api/items/${item.id}/regenerate-image`), {
           method: "POST",
           headers: openaiKeyHeaders(),
           body: formData,
@@ -1319,7 +1395,7 @@ function renderReviewImages(item) {
       formData.append("image_id", btn.dataset.id);
       formData.append("openai_api_key", apiKey);
       try {
-        const res = await fetch(`/api/items/${item.id}/regenerate-styled-image`, {
+        const res = await fetch(apiUrl(`/api/items/${item.id}/regenerate-styled-image`), {
           method: "POST",
           headers: openaiKeyHeaders(),
           body: formData,
@@ -1378,7 +1454,7 @@ async function saveCurrentItem() {
   if (btnMobile) btnMobile.disabled = true;
 
   try {
-    const res = await fetch(`/api/items/${state.currentItem.id}`, {
+    const res = await fetch(apiUrl(`/api/items/${state.currentItem.id}`), {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -1408,7 +1484,7 @@ async function loadLibrary() {
   if (status) params.set("status", status);
   if (search) params.set("search", search);
 
-  const res = await fetch(`/api/items?${params}`);
+  const res = await fetch(apiUrl(`/api/items?${params}`));
   state.libraryItems = await res.json();
   state.selectedIds.clear();
   renderLibrary();
@@ -1460,7 +1536,7 @@ function renderLibrary() {
 
     tbody.querySelectorAll(".open-item").forEach((btn) => {
       btn.addEventListener("click", async () => {
-        const res = await fetch(`/api/items/${btn.dataset.id}`);
+        const res = await fetch(apiUrl(`/api/items/${btn.dataset.id}`));
         const data = await res.json();
         openReview(data);
       });
@@ -1505,7 +1581,7 @@ function renderLibrary() {
     cards.querySelectorAll(".library-card").forEach((card) => {
       card.addEventListener("click", async (e) => {
         if (e.target.closest(".library-card-check, .preview-item, .row-select")) return;
-        const res = await fetch(`/api/items/${card.dataset.id}`);
+        const res = await fetch(apiUrl(`/api/items/${card.dataset.id}`));
         const data = await res.json();
         openReview(data);
       });
@@ -1541,7 +1617,7 @@ function updateSelectionButtons() {
 async function openPreview(itemId) {
   hideAlert();
   try {
-    const res = await fetch(`/api/items/${itemId}`);
+    const res = await fetch(apiUrl(`/api/items/${itemId}`));
     const item = await res.json();
     if (!res.ok) throw new Error(item.detail || "Could not load listing");
 
@@ -1583,6 +1659,7 @@ async function openPreview(itemId) {
           <div><strong>SKU:</strong> ${escapeAttr(item.sku || "—")}</div>
         </div>
       </div>
+      ${renderPreviewStoreUploads(item)}
       <div class="preview-section">
         <h3>Variations</h3>
         ${formatItemModifiersPreview(item)}
@@ -1619,6 +1696,8 @@ async function openPreview(itemId) {
       );
     });
 
+    bindPreviewStoreUploads(item.id);
+
     $("#preview-modal").classList.remove("hidden");
   } catch (err) {
     showAlert(err.message);
@@ -1649,7 +1728,7 @@ async function generatePreviewStyledImage(itemId, sortOrder, btn) {
   formData.append("openai_api_key", getStoredApiKey());
 
   try {
-    const res = await fetch(`/api/items/${itemId}/generate-styled-image`, {
+    const res = await fetch(apiUrl(`/api/items/${itemId}/generate-styled-image`), {
       method: "POST",
       headers: openaiKeyHeaders(),
       body: formData,
@@ -1708,7 +1787,7 @@ $("#select-all-mobile")?.addEventListener("change", (e) => {
 $("#export-btn").addEventListener("click", async () => {
   hideAlert();
   try {
-    const res = await fetch("/api/export", {
+    const res = await fetch(apiUrl("/api/export"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ item_ids: [...state.selectedIds] }),
@@ -1744,7 +1823,7 @@ $("#delete-btn").addEventListener("click", async () => {
   btn.disabled = true;
 
   try {
-    const res = await fetch("/api/items/delete", {
+    const res = await fetch(apiUrl("/api/items/delete"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ item_ids: [...state.selectedIds] }),
@@ -1767,7 +1846,7 @@ $("#preview-edit-btn").addEventListener("click", async () => {
   const itemId = state.previewItemId;
   if (!itemId) return;
   closePreview();
-  const res = await fetch(`/api/items/${itemId}`);
+  const res = await fetch(apiUrl(`/api/items/${itemId}`));
   const data = await res.json();
   openReview(data);
 });
@@ -1812,7 +1891,7 @@ function debounce(fn, ms) {
 }
 
 async function loadSquareExamples() {
-  const res = await fetch("/api/square/examples");
+  const res = await fetch(apiUrl("/api/square/examples"));
   const data = await res.json();
   const items = data.items || [];
   const status = $("#examples-status");
@@ -1858,7 +1937,7 @@ $("#square-import-input").addEventListener("change", async (e) => {
   formData.append("file", file);
 
   try {
-    const res = await fetch("/api/square/import", { method: "POST", body: formData });
+    const res = await fetch(apiUrl("/api/square/import"), { method: "POST", body: formData });
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || "Import failed");
     showAlert(`Imported ${data.imported} items from Square.`, "info");
@@ -1874,7 +1953,7 @@ $("#save-production-settings-btn").addEventListener("click", async () => {
   hideAlert();
   const payload = getActiveProductionSettings();
   try {
-    const res = await fetch("/api/production/settings", {
+    const res = await fetch(apiUrl("/api/production/settings"), {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -1908,7 +1987,7 @@ $("#save-production-btn").addEventListener("click", async () => {
 
   const production = gatherProductionFromContainer($("#production-editor-table"));
   try {
-    const res = await fetch(`/api/items/${state.productionItemId}`, {
+    const res = await fetch(apiUrl(`/api/items/${state.productionItemId}`), {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ production }),
@@ -1938,7 +2017,7 @@ $("#open-production-tab-btn").addEventListener("click", () => {
 });
 
 async function loadFilamentColorOptions() {
-  const res = await fetch("/api/options");
+  const res = await fetch(apiUrl("/api/options"));
   const options = await res.json();
   const colors = new Set([...(options.colorsFull || []), ...(options.colorsTrellis || [])]);
   const datalist = $("#filament-color-options");
@@ -2120,7 +2199,7 @@ async function saveFilamentColorName(input) {
   hideAlert();
   input.disabled = true;
   try {
-    const res = await fetch(`/api/filament/spools/${spoolId}`, {
+    const res = await fetch(apiUrl(`/api/filament/spools/${spoolId}`), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ color_name: next }),
@@ -2145,7 +2224,7 @@ async function saveFilamentColorName(input) {
 async function loadFilamentInventory() {
   hideAlert();
   await loadFilamentColorOptions();
-  const res = await fetch("/api/filament/spools");
+  const res = await fetch(apiUrl("/api/filament/spools"));
   const data = await res.json();
   if (!res.ok) throw new Error(data.detail || "Could not load filament inventory");
   state.filamentSpools = data.spools || [];
@@ -2168,7 +2247,7 @@ $$(".filament-table .sortable-th").forEach((btn) => {
 async function adjustFilamentSpool(spoolId, delta) {
   hideAlert();
   try {
-    const res = await fetch(`/api/filament/spools/${spoolId}/adjust`, {
+    const res = await fetch(apiUrl(`/api/filament/spools/${spoolId}/adjust`), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ delta }),
@@ -2189,7 +2268,7 @@ async function removeFilamentSpool(spoolId, row) {
   if (!window.confirm(`Remove ${color} from filament inventory?`)) return;
   hideAlert();
   try {
-    const res = await fetch(`/api/filament/spools/${spoolId}`, { method: "DELETE" });
+    const res = await fetch(apiUrl(`/api/filament/spools/${spoolId}`), { method: "DELETE" });
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || "Could not remove color");
     await loadFilamentInventory();
@@ -2207,7 +2286,7 @@ $("#filament-add-form").addEventListener("submit", async (e) => {
   if (btn) btn.disabled = true;
 
   try {
-    const res = await fetch("/api/filament/spools", {
+    const res = await fetch(apiUrl("/api/filament/spools"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ color_name: color, quantity }),
@@ -2342,7 +2421,7 @@ async function init() {
   window.addEventListener("resize", debounce(initMobileApiKeySection, 150));
   await loadCategories();
 
-  const health = await fetch("/api/health").then((r) => r.json());
+  const health = await fetch(apiUrl("/api/health")).then((r) => r.json());
   state.openaiEnvConfigured = !!health.openai_env_configured;
   updateOpenAiKeyHint(state.openaiEnvConfigured);
 }

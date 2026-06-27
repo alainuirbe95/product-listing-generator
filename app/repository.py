@@ -103,6 +103,16 @@ def update_item(item_id: str, **fields: Any) -> dict[str, Any] | None:
         "status",
         "primary_image_id",
         "production",
+        "uploaded_etsy",
+        "uploaded_meta",
+        "uploaded_tiktok",
+        "uploaded_website",
+    }
+    upload_flags = {
+        "uploaded_etsy",
+        "uploaded_meta",
+        "uploaded_tiktok",
+        "uploaded_website",
     }
     updates: dict[str, Any] = {k: v for k, v in fields.items() if k in allowed}
     if not updates:
@@ -114,6 +124,9 @@ def update_item(item_id: str, **fields: Any) -> dict[str, Any] | None:
         updates["tags"] = json.dumps(updates["tags"])
     if "production" in updates:
         updates["production"] = json.dumps(updates["production"])
+    for key in upload_flags:
+        if key in updates:
+            updates[key] = 1 if updates[key] else 0
 
     updates["updated_at"] = utc_now()
     set_clause = ", ".join(f"{key} = ?" for key in updates)
