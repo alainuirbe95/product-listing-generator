@@ -21,6 +21,45 @@ const API_KEY_STORAGE = "retro_minds_openai_api_key";
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
 
+function isMobileView() {
+  return window.matchMedia("(max-width: 768px)").matches;
+}
+
+function initMobileApiKeySection() {
+  const section = $("#api-key-section");
+  if (!section) return;
+  if (isMobileView()) section.removeAttribute("open");
+  else section.setAttribute("open", "");
+}
+
+function syncSelectAllCheckboxes(checked) {
+  const desktop = $("#select-all");
+  const mobile = $("#select-all-mobile");
+  if (desktop) desktop.checked = checked;
+  if (mobile) mobile.checked = checked;
+}
+
+function bindRowSelectHandlers(container) {
+  if (!container) return;
+  container.querySelectorAll(".row-select").forEach((cb) => {
+    cb.addEventListener("change", () => {
+      if (cb.checked) state.selectedIds.add(cb.dataset.id);
+      else state.selectedIds.delete(cb.dataset.id);
+      syncRowSelectCheckboxes(cb.dataset.id, cb.checked);
+      updateSelectionButtons();
+    });
+  });
+}
+
+function syncRowSelectCheckboxes(id, checked) {
+  $$(`.row-select[data-id="${id}"]`).forEach((cb) => {
+    cb.checked = checked;
+  });
+  const allBoxes = [...$$(".row-select")];
+  const allChecked = allBoxes.length > 0 && allBoxes.every((cb) => cb.checked);
+  syncSelectAllCheckboxes(allChecked);
+}
+
 function showAlert(message, type = "error") {
   const el = $("#global-alert");
   el.textContent = message;
@@ -542,6 +581,7 @@ $("#new-item-form").addEventListener("submit", async (e) => {
 
   if (!apiKeyReady()) {
     showAlert("Paste a valid OpenAI API key (starts with sk-) in the field above.");
+    $("#api-key-section")?.setAttribute("open", "");
     document.getElementById("openai-api-key")?.focus();
     return;
   }
@@ -849,19 +889,47 @@ function updateProductionTableCosts(container, settings, fallbackPrice) {
 
 function refreshAnalyzerCosts(settings) {
   const tbody = $("#production-analyzer-body");
-  if (!tbody || !state.analyzerRows?.length) return;
+  const cards = $("#production-analyzer-cards");
+  if (!state.analyzerRows?.length) return;
 
-  tbody.querySelectorAll("tr").forEach((rowEl, index) => {
-    const row = state.analyzerRows[index];
-    if (!row) return;
+  state.analyzerRows.forEach((row, index) => {
     const costs = computeVariationCosts(row, settings, row.list_price);
-    const cells = rowEl.querySelectorAll("td");
-    if (cells.length >= 10) {
-      cells[5].textContent = formatMoney(costs.materialCost);
-      cells[6].textContent = formatMoney(costs.laborCost);
-      cells[7].textContent = formatMoney(costs.totalCost);
-      cells[9].textContent = formatMargin(costs.margin, costs.marginPct);
-      cells[9].className = costs.margin != null && costs.margin < 0 ? "text-danger" : "";
+
+    if (tbody) {
+      const rowEl = tbody.querySelectorAll("tr")[index];
+      if (rowEl) {
+        const cells = rowEl.querySelectorAll("td");
+        if (cells.length >= 10) {
+          cells[5].textContent = formatMoney(costs.materialCost);
+          cells[6].textContent = formatMoney(costs.laborCost);
+          cells[7].textContent = formatMoney(costs.totalCost);
+          cells[9].textContent = formatMargin(costs.margin, costs.marginPct);
+          cells[9].className = costs.margin != null && costs.margin < 0 ? "text-danger" : "";
+        }
+      }
+    }
+
+    if (cards) {
+      const card = cards.querySelector(`.production-card[data-index="${index}"]`);
+      if (!card) return;
+      const costEl = card.querySelector(".production-card-cost");
+      const marginEl = card.querySelector(".production-card-margin");
+      if (costEl) costEl.textContent = formatMoney(costs.totalCost);
+      if (marginEl) {
+        marginEl.textContent = formatMargin(costs.margin, costs.marginPct);
+        marginEl.className = `production-card-margin ${costs.margin != null && costs.margin < 0 ? "text-danger" : ""}`;
+      }
+      const materialEl = card.querySelector('[data-field="material"]');
+      const laborEl = card.querySelector('[data-field="labor"]');
+      const totalEl = card.querySelector('[data-field="total"]');
+      const marginDetailEl = card.querySelector('[data-field="margin"]');
+      if (materialEl) materialEl.textContent = formatMoney(costs.materialCost);
+      if (laborEl) laborEl.textContent = formatMoney(costs.laborCost);
+      if (totalEl) totalEl.textContent = formatMoney(costs.totalCost);
+      if (marginDetailEl) {
+        marginDetailEl.textContent = formatMargin(costs.margin, costs.marginPct);
+        marginDetailEl.className = costs.margin != null && costs.margin < 0 ? "text-danger" : "";
+      }
     }
   });
 }
@@ -1017,51 +1085,109 @@ async function loadProductionAnalyzer() {
   state.productionSettings = data.settings;
 
   const tbody = $("#production-analyzer-body");
+  const cards = $("#production-analyzer-cards");
   const empty = $("#production-analyzer-empty");
   const rows = data.rows || [];
   state.analyzerRows = rows;
 
   if (!rows.length) {
-    tbody.innerHTML = "";
+    if (tbody) tbody.innerHTML = "";
+    if (cards) cards.innerHTML = "";
     empty.classList.remove("hidden");
     return;
   }
 
   empty.classList.add("hidden");
   const settings = getActiveProductionSettings();
-  tbody.innerHTML = rows
-    .map((row) => {
-      const costs = computeVariationCosts(row, settings, row.list_price);
-      return `
-      <tr>
-        <td>
-          <button type="button" class="link-btn production-open-item" data-id="${row.item_id}">
-            ${escapeAttr(row.item_label)}
-          </button>
-        </td>
-        <td>${escapeAttr(row.variation_name)}</td>
-        <td>${row.print_time_hrs ?? "—"}</td>
-        <td>${row.filament_grams ?? "—"}</td>
-        <td>${escapeAttr(row.infill_method || "—")}</td>
-        <td>${formatMoney(costs.materialCost)}</td>
-        <td>${formatMoney(costs.laborCost)}</td>
-        <td>${formatMoney(costs.totalCost)}</td>
-        <td>${formatMoney(row.list_price)}</td>
-        <td class="${costs.margin != null && costs.margin < 0 ? "text-danger" : ""}">
-          ${formatMargin(costs.margin, costs.marginPct)}
-        </td>
-      </tr>
-    `;
-    })
-    .join("");
 
-  tbody.querySelectorAll(".production-open-item").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      $("#production-item-select").value = btn.dataset.id;
-      await loadProductionEditor(btn.dataset.id);
-      $("#production-editor").scrollIntoView({ behavior: "smooth", block: "start" });
+  if (tbody) {
+    tbody.innerHTML = rows
+      .map((row) => {
+        const costs = computeVariationCosts(row, settings, row.list_price);
+        return `
+        <tr>
+          <td>
+            <button type="button" class="link-btn production-open-item" data-id="${row.item_id}">
+              ${escapeAttr(row.item_label)}
+            </button>
+          </td>
+          <td>${escapeAttr(row.variation_name)}</td>
+          <td>${row.print_time_hrs ?? "—"}</td>
+          <td>${row.filament_grams ?? "—"}</td>
+          <td>${escapeAttr(row.infill_method || "—")}</td>
+          <td>${formatMoney(costs.materialCost)}</td>
+          <td>${formatMoney(costs.laborCost)}</td>
+          <td>${formatMoney(costs.totalCost)}</td>
+          <td>${formatMoney(row.list_price)}</td>
+          <td class="${costs.margin != null && costs.margin < 0 ? "text-danger" : ""}">
+            ${formatMargin(costs.margin, costs.marginPct)}
+          </td>
+        </tr>
+      `;
+      })
+      .join("");
+
+    tbody.querySelectorAll(".production-open-item").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        $("#production-item-select").value = btn.dataset.id;
+        await loadProductionEditor(btn.dataset.id);
+        $("#production-editor").scrollIntoView({ behavior: "smooth", block: "start" });
+      });
     });
-  });
+  }
+
+  if (cards) {
+    cards.innerHTML = rows
+      .map((row, index) => {
+        const costs = computeVariationCosts(row, settings, row.list_price);
+        return `
+        <article class="production-card" data-index="${index}">
+          <button type="button" class="production-card-header" aria-expanded="false">
+            <div class="production-card-title">
+              <span class="production-card-listing">${escapeAttr(row.item_label)}</span>
+              <span class="production-card-variation">${escapeAttr(row.variation_name)}</span>
+            </div>
+            <div class="production-card-stats">
+              <span class="production-card-cost">${formatMoney(costs.totalCost)}</span>
+              <span class="production-card-margin ${costs.margin != null && costs.margin < 0 ? "text-danger" : ""}">${formatMargin(costs.margin, costs.marginPct)}</span>
+            </div>
+            <span class="production-card-chevron" aria-hidden="true">▼</span>
+          </button>
+          <div class="production-card-details hidden">
+            <div class="production-detail-row"><span>Hours</span><span>${row.print_time_hrs ?? "—"}</span></div>
+            <div class="production-detail-row"><span>Filament</span><span>${row.filament_grams != null ? `${row.filament_grams} g` : "—"}</span></div>
+            <div class="production-detail-row"><span>Infill</span><span>${escapeAttr(row.infill_method || "—")}</span></div>
+            <div class="production-detail-row"><span>Material</span><span data-field="material">${formatMoney(costs.materialCost)}</span></div>
+            <div class="production-detail-row"><span>Labor</span><span data-field="labor">${formatMoney(costs.laborCost)}</span></div>
+            <div class="production-detail-row"><span>Total cost</span><span data-field="total">${formatMoney(costs.totalCost)}</span></div>
+            <div class="production-detail-row"><span>List price</span><span>${formatMoney(row.list_price)}</span></div>
+            <div class="production-detail-row"><span>Margin</span><span data-field="margin" class="${costs.margin != null && costs.margin < 0 ? "text-danger" : ""}">${formatMargin(costs.margin, costs.marginPct)}</span></div>
+            <button type="button" class="link-btn production-card-open production-open-item" data-id="${row.item_id}">Edit in tracker →</button>
+          </div>
+        </article>
+      `;
+      })
+      .join("");
+
+    cards.querySelectorAll(".production-card-header").forEach((header) => {
+      header.addEventListener("click", () => {
+        const card = header.closest(".production-card");
+        const details = card.querySelector(".production-card-details");
+        const expanded = card.classList.toggle("expanded");
+        details.classList.toggle("hidden", !expanded);
+        header.setAttribute("aria-expanded", expanded ? "true" : "false");
+      });
+    });
+
+    cards.querySelectorAll(".production-open-item").forEach((btn) => {
+      btn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        $("#production-item-select").value = btn.dataset.id;
+        await loadProductionEditor(btn.dataset.id);
+        $("#production-editor").scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+  }
 }
 
 async function loadProductionView(itemId = "") {
@@ -1219,7 +1345,10 @@ function renderTagsPreview() {
   $("#tags-preview").innerHTML = tags.map((t) => `<span class="tag">${escapeAttr(t)}</span>`).join("");
 }
 
-$("#save-btn").addEventListener("click", async () => {
+$("#save-btn").addEventListener("click", saveCurrentItem);
+$("#save-btn-mobile")?.addEventListener("click", saveCurrentItem);
+
+async function saveCurrentItem() {
   if (!state.currentItem) return;
   hideAlert();
 
@@ -1244,7 +1373,9 @@ $("#save-btn").addEventListener("click", async () => {
   };
 
   const btn = $("#save-btn");
-  btn.disabled = true;
+  const btnMobile = $("#save-btn-mobile");
+  if (btn) btn.disabled = true;
+  if (btnMobile) btnMobile.disabled = true;
 
   try {
     const res = await fetch(`/api/items/${state.currentItem.id}`, {
@@ -1260,11 +1391,13 @@ $("#save-btn").addEventListener("click", async () => {
   } catch (err) {
     showAlert(err.message);
   } finally {
-    btn.disabled = false;
+    if (btn) btn.disabled = false;
+    if (btnMobile) btnMobile.disabled = false;
   }
-});
+}
 
 $("#back-to-library").addEventListener("click", () => switchView("library"));
+$("#back-to-library-mobile")?.addEventListener("click", () => switchView("library"));
 
 async function loadLibrary() {
   const params = new URLSearchParams();
@@ -1283,21 +1416,25 @@ async function loadLibrary() {
 
 function renderLibrary() {
   const tbody = $("#library-body");
+  const cards = $("#library-cards");
   const empty = $("#library-empty");
-  $("#select-all").checked = false;
+  syncSelectAllCheckboxes(false);
   updateSelectionButtons();
 
   if (!state.libraryItems.length) {
-    tbody.innerHTML = "";
+    if (tbody) tbody.innerHTML = "";
+    if (cards) cards.innerHTML = "";
     empty.classList.remove("hidden");
     return;
   }
 
   empty.classList.add("hidden");
-  tbody.innerHTML = state.libraryItems
-    .map((item) => {
-      const thumb = getPrimaryThumb(item);
-      return `
+
+  if (tbody) {
+    tbody.innerHTML = state.libraryItems
+      .map((item) => {
+        const thumb = getPrimaryThumb(item);
+        return `
         <tr>
           <td><input type="checkbox" class="row-select" data-id="${item.id}" /></td>
           <td>${thumb ? `<img class="thumb" src="${mediaUrl(thumb.file_path)}" alt="" />` : ""}</td>
@@ -1312,28 +1449,75 @@ function renderLibrary() {
           </td>
         </tr>
       `;
-    })
-    .join("");
+      })
+      .join("");
 
-  tbody.querySelectorAll(".row-select").forEach((cb) => {
-    cb.addEventListener("change", () => {
-      if (cb.checked) state.selectedIds.add(cb.dataset.id);
-      else state.selectedIds.delete(cb.dataset.id);
-      updateSelectionButtons();
+    bindRowSelectHandlers(tbody);
+
+    tbody.querySelectorAll(".preview-item").forEach((btn) => {
+      btn.addEventListener("click", () => openPreview(btn.dataset.id));
     });
-  });
 
-  tbody.querySelectorAll(".preview-item").forEach((btn) => {
-    btn.addEventListener("click", () => openPreview(btn.dataset.id));
-  });
-
-  tbody.querySelectorAll(".open-item").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const res = await fetch(`/api/items/${btn.dataset.id}`);
-      const data = await res.json();
-      openReview(data);
+    tbody.querySelectorAll(".open-item").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const res = await fetch(`/api/items/${btn.dataset.id}`);
+        const data = await res.json();
+        openReview(data);
+      });
     });
-  });
+  }
+
+  if (cards) {
+    cards.innerHTML = state.libraryItems
+      .map((item) => {
+        const thumb = getPrimaryThumb(item);
+        const price =
+          item.price != null && item.price !== "" ? formatMoney(item.price) : "";
+        const metaParts = [categoryLabel(item.category)];
+        if (price) metaParts.push(price);
+        return `
+        <article class="library-card" data-id="${item.id}">
+          <label class="library-card-check" aria-label="Select ${escapeAttr(itemDisplayName(item))}">
+            <input type="checkbox" class="row-select" data-id="${item.id}" />
+          </label>
+          ${
+            thumb
+              ? `<img class="library-card-thumb" src="${mediaUrl(thumb.file_path)}" alt="" />`
+              : `<div class="library-card-thumb library-card-thumb--empty" aria-hidden="true"></div>`
+          }
+          <div class="library-card-body">
+            <h3 class="library-card-name">${escapeAttr(itemDisplayName(item))}</h3>
+            <p class="library-card-meta">${escapeAttr(metaParts.join(" · "))}</p>
+            <span class="status-badge ${item.status}">${item.status}</span>
+          </div>
+          <button type="button" class="library-card-preview link-btn preview-item" data-id="${item.id}" aria-label="Preview listing">⋯</button>
+        </article>
+      `;
+      })
+      .join("");
+
+    bindRowSelectHandlers(cards);
+
+    cards.querySelectorAll(".library-card-check").forEach((label) => {
+      label.addEventListener("click", (e) => e.stopPropagation());
+    });
+
+    cards.querySelectorAll(".library-card").forEach((card) => {
+      card.addEventListener("click", async (e) => {
+        if (e.target.closest(".library-card-check, .preview-item, .row-select")) return;
+        const res = await fetch(`/api/items/${card.dataset.id}`);
+        const data = await res.json();
+        openReview(data);
+      });
+    });
+
+    cards.querySelectorAll(".preview-item").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openPreview(btn.dataset.id);
+      });
+    });
+  }
 }
 
 function getPrimaryThumb(item) {
@@ -1503,14 +1687,22 @@ async function downloadPreviewImage(filePath, filename, btn) {
   }
 }
 
-$("#select-all").addEventListener("change", (e) => {
-  const checked = e.target.checked;
+function handleSelectAllChange(checked) {
+  syncSelectAllCheckboxes(checked);
   $$(".row-select").forEach((cb) => {
     cb.checked = checked;
     if (checked) state.selectedIds.add(cb.dataset.id);
     else state.selectedIds.delete(cb.dataset.id);
   });
   updateSelectionButtons();
+}
+
+$("#select-all")?.addEventListener("change", (e) => {
+  handleSelectAllChange(e.target.checked);
+});
+
+$("#select-all-mobile")?.addEventListener("change", (e) => {
+  handleSelectAllChange(e.target.checked);
 });
 
 $("#export-btn").addEventListener("click", async () => {
@@ -1802,24 +1994,57 @@ function renderFilamentInventoryTable() {
   updateFilamentSortIndicators();
 }
 
+function bindFilamentRowEvents(root) {
+  if (!root) return;
+  root.querySelectorAll(".filament-minus").forEach((btn) => {
+    btn.addEventListener("click", () => adjustFilamentSpool(btn.dataset.id, -1));
+  });
+  root.querySelectorAll(".filament-plus").forEach((btn) => {
+    btn.addEventListener("click", () => adjustFilamentSpool(btn.dataset.id, 1));
+  });
+  root.querySelectorAll(".filament-remove").forEach((btn) => {
+    btn.addEventListener("click", () =>
+      removeFilamentSpool(btn.dataset.id, btn.closest("tr") || btn.closest(".filament-card"))
+    );
+  });
+  root.querySelectorAll(".filament-color-input").forEach((input) => {
+    const save = () => saveFilamentColorName(input);
+    input.addEventListener("blur", save);
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        input.blur();
+      }
+      if (e.key === "Escape") {
+        input.value = input.dataset.original;
+        input.blur();
+      }
+    });
+  });
+}
+
 function renderFilamentTable(spools, totalSpools) {
   const tbody = $("#filament-body");
+  const cards = $("#filament-cards");
   const empty = $("#filament-empty");
   const totalEl = $("#filament-total");
 
   totalEl.textContent = `Total spools: ${totalSpools}`;
 
   if (!spools.length) {
-    tbody.innerHTML = "";
+    if (tbody) tbody.innerHTML = "";
+    if (cards) cards.innerHTML = "";
     empty.classList.remove("hidden");
     updateFilamentSortIndicators();
     return;
   }
 
   empty.classList.add("hidden");
-  tbody.innerHTML = spools
-    .map(
-      (spool) => `
+
+  if (tbody) {
+    tbody.innerHTML = spools
+      .map(
+        (spool) => `
       <tr data-id="${spool.id}" class="${filamentRowClass(spool.quantity)}">
         <td>
           <input
@@ -1847,33 +2072,40 @@ function renderFilamentTable(spools, totalSpools) {
         </td>
       </tr>
     `
-    )
-    .join("");
+      )
+      .join("");
+    bindFilamentRowEvents(tbody);
+  }
 
-  tbody.querySelectorAll(".filament-minus").forEach((btn) => {
-    btn.addEventListener("click", () => adjustFilamentSpool(btn.dataset.id, -1));
-  });
-  tbody.querySelectorAll(".filament-plus").forEach((btn) => {
-    btn.addEventListener("click", () => adjustFilamentSpool(btn.dataset.id, 1));
-  });
-  tbody.querySelectorAll(".filament-remove").forEach((btn) => {
-    btn.addEventListener("click", () => removeFilamentSpool(btn.dataset.id, btn.closest("tr")));
-  });
-
-  tbody.querySelectorAll(".filament-color-input").forEach((input) => {
-    const save = () => saveFilamentColorName(input);
-    input.addEventListener("blur", save);
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        input.blur();
-      }
-      if (e.key === "Escape") {
-        input.value = input.dataset.original;
-        input.blur();
-      }
-    });
-  });
+  if (cards) {
+    cards.innerHTML = spools
+      .map(
+        (spool) => `
+      <article class="filament-card ${filamentRowClass(spool.quantity)}" data-id="${spool.id}">
+        <div class="filament-card-header">
+          ${filamentStockIndicator(spool.quantity)}
+          <input
+            type="text"
+            class="filament-color-input"
+            data-id="${spool.id}"
+            data-original="${escapeAttr(spool.color_name)}"
+            value="${escapeAttr(spool.color_name)}"
+            list="filament-color-options"
+            aria-label="Color name"
+          />
+        </div>
+        <div class="filament-card-qty">
+          <button type="button" class="btn btn-secondary filament-minus" data-id="${spool.id}" title="Open a spool" ${spool.quantity === 0 ? "disabled" : ""} aria-label="Remove one spool">−</button>
+          <span class="qty-value">${spool.quantity}</span>
+          <button type="button" class="btn btn-secondary filament-plus" data-id="${spool.id}" title="Add one spool" aria-label="Add one spool">+</button>
+        </div>
+        <button type="button" class="link-btn filament-remove" data-id="${spool.id}">Remove color</button>
+      </article>
+    `
+      )
+      .join("");
+    bindFilamentRowEvents(cards);
+  }
 }
 
 async function saveFilamentColorName(input) {
@@ -2106,6 +2338,8 @@ async function init() {
   setupDropzone();
   bindApiKeyInput();
   loadStoredApiKeyIntoForm();
+  initMobileApiKeySection();
+  window.addEventListener("resize", debounce(initMobileApiKeySection, 150));
   await loadCategories();
 
   const health = await fetch("/api/health").then((r) => r.json());

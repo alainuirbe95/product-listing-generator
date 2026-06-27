@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/static/css/app.css?v=7" />
+  <link rel="stylesheet" href="/static/css/app.css?v=8" />
 </head>
 <body>
   <div class="app-bg" aria-hidden="true"></div>
@@ -35,20 +35,26 @@
     <!-- NEW ITEM -->
     <section id="view-new" class="panel active">
       <form id="new-item-form">
-        <div class="card">
-          <h2>OpenAI API Key</h2>
-          <label for="openai-api-key">API Key</label>
-          <input
-            id="openai-api-key"
-            name="openai_api_key"
-            type="password"
-            autocomplete="off"
-            placeholder="sk-…"
-          />
-          <p class="field-hint" id="openai-key-hint">
-            Paste your key here to generate. Saved in this browser only — not sent anywhere except OpenAI.
-          </p>
-        </div>
+        <details class="card collapsible-section api-key-section" id="api-key-section">
+          <summary class="collapsible-summary">
+            <span class="collapsible-title">API key</span>
+            <span class="collapsible-chevron" aria-hidden="true"></span>
+          </summary>
+          <div class="collapsible-body">
+            <h2 class="api-key-heading">OpenAI API Key</h2>
+            <label for="openai-api-key">API Key</label>
+            <input
+              id="openai-api-key"
+              name="openai_api_key"
+              type="password"
+              autocomplete="off"
+              placeholder="sk-…"
+            />
+            <p class="field-hint" id="openai-key-hint">
+              Paste your key here to generate. Saved in this browser only — not sent anywhere except OpenAI.
+            </p>
+          </div>
+        </details>
 
         <div class="card">
           <h2>Photos</h2>
@@ -92,20 +98,22 @@
           <p class="field-hint" id="studio-prompt-hint"></p>
         </div>
 
-        <button id="generate-btn" type="submit" class="btn btn-primary">Generate Listing</button>
+        <div class="sticky-action-bar sticky-action-bar--form">
+          <button id="generate-btn" type="submit" class="btn btn-primary">Generate Listing</button>
+        </div>
       </form>
     </section>
 
     <!-- REVIEW -->
     <section id="view-review" class="panel">
-      <div class="toolbar">
-        <button type="button" class="btn btn-secondary" id="back-to-library">← Back to Library</button>
+      <div class="toolbar review-toolbar">
+        <button type="button" class="btn btn-secondary review-back-desktop" id="back-to-library">← Back to Library</button>
         <span id="review-status" class="status-badge"></span>
       </div>
 
       <div class="card">
         <h2>Images</h2>
-        <div id="review-images" class="image-compare"></div>
+        <div id="review-images" class="image-compare image-gallery-swipe"></div>
       </div>
 
       <div class="card">
@@ -160,31 +168,48 @@
         </button>
       </div>
 
-      <button type="button" id="save-btn" class="btn btn-primary">Save</button>
+      <button type="button" id="save-btn" class="btn btn-primary review-save-desktop">Save</button>
+
+      <div class="sticky-action-bar sticky-action-bar--review" id="review-action-bar">
+        <button type="button" class="btn btn-secondary" id="back-to-library-mobile">← Back</button>
+        <button type="button" id="save-btn-mobile" class="btn btn-primary">Save</button>
+      </div>
     </section>
 
     <!-- LIBRARY -->
     <section id="view-library" class="panel">
-      <div class="toolbar">
+      <div class="toolbar library-toolbar">
         <input id="library-search" type="text" placeholder="Search name, title, SKU…" />
-        <select id="filter-category">
-          <option value="">All categories</option>
-        </select>
-        <select id="filter-status">
-          <option value="">All statuses</option>
-          <option value="ready">Ready</option>
-          <option value="draft">Draft</option>
-          <option value="generating">Generating</option>
-        </select>
-        <button type="button" id="delete-btn" class="btn btn-danger" disabled>
-          Delete Selected
-        </button>
-        <button type="button" id="export-btn" class="btn btn-primary" disabled>
-          Export Selected to Square CSV
-        </button>
+        <div class="library-toolbar-filters">
+          <select id="filter-category">
+            <option value="">All categories</option>
+          </select>
+          <select id="filter-status">
+            <option value="">All statuses</option>
+            <option value="ready">Ready</option>
+            <option value="draft">Draft</option>
+            <option value="generating">Generating</option>
+          </select>
+        </div>
+        <div class="library-bulk-bar">
+          <label class="bulk-select-label">
+            <input type="checkbox" id="select-all-mobile" />
+            <span>All</span>
+          </label>
+          <button type="button" id="delete-btn" class="btn btn-danger" disabled title="Delete selected">
+            <span class="btn-label-mobile">Delete</span>
+            <span class="btn-label-desktop">Delete Selected</span>
+          </button>
+          <button type="button" id="export-btn" class="btn btn-primary" disabled title="Export to Square CSV">
+            <span class="btn-label-mobile">Export</span>
+            <span class="btn-label-desktop">Export Selected to Square CSV</span>
+          </button>
+        </div>
       </div>
 
-      <div class="card table-scroll" style="padding: 0; overflow: hidden;">
+      <div id="library-cards" class="mobile-card-list library-card-list"></div>
+
+      <div class="card table-scroll desktop-table-wrap" style="padding: 0; overflow: hidden;">
         <table class="library-table">
           <thead>
             <tr>
@@ -198,10 +223,10 @@
           </thead>
           <tbody id="library-body"></tbody>
         </table>
-        <div id="library-empty" class="empty-state hidden">
-          <p>No items yet.</p>
-          <button type="button" class="link-btn" data-view-link="new">Create your first listing →</button>
-        </div>
+      </div>
+      <div id="library-empty" class="empty-state hidden">
+        <p>No items yet.</p>
+        <button type="button" class="link-btn" data-view-link="new">Create your first listing →</button>
       </div>
     </section>
 
@@ -265,7 +290,8 @@
             </label>
           </div>
         </div>
-        <div class="table-scroll">
+        <div id="production-analyzer-cards" class="mobile-card-list production-card-list"></div>
+        <div class="table-scroll desktop-table-wrap">
         <table class="library-table production-table">
           <thead>
             <tr>
@@ -323,7 +349,9 @@
         </form>
       </div>
 
-      <div class="card table-scroll" style="padding: 0; overflow: hidden;">
+      <div id="filament-cards" class="mobile-card-list filament-card-list"></div>
+
+      <div class="card table-scroll desktop-table-wrap" style="padding: 0; overflow: hidden;">
         <table class="library-table filament-table">
           <thead>
             <tr>
@@ -342,9 +370,9 @@
           </thead>
           <tbody id="filament-body"></tbody>
         </table>
-        <div id="filament-empty" class="empty-state hidden">
-          <p>No filament tracked yet. Add a color above — e.g. 2 Red spools when an order arrives.</p>
-        </div>
+      </div>
+      <div id="filament-empty" class="empty-state hidden">
+        <p>No filament tracked yet. Add a color above — e.g. 2 Red spools when an order arrives.</p>
       </div>
     </section>
 
@@ -368,7 +396,7 @@
 
       <div class="card">
         <h2>Loaded Examples</h2>
-        <div id="examples-list"></div>
+        <div id="examples-list" class="examples-card-list"></div>
       </div>
     </section>
   </main>
@@ -427,6 +455,6 @@
     </button>
   </nav>
 
-  <script src="/static/js/app.js?v=21"></script>
+  <script src="/static/js/app.js?v=22"></script>
 </body>
 </html>
