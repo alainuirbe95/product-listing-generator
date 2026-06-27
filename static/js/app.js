@@ -165,7 +165,7 @@ function switchView(view) {
 }
 
 function mediaUrl(filePath) {
-  return `/media/${filePath}`;
+  return `media/${filePath}`;
 }
 
 const STYLED_IMAGE_CATEGORIES = new Set(["pot", "vase"]);
