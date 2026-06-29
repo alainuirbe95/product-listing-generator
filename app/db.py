@@ -116,6 +116,21 @@ def _migrate_schema(conn: sqlite3.Connection) -> None:
         """
     )
 
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS print_queue (
+            id TEXT PRIMARY KEY,
+            item_name TEXT NOT NULL,
+            order_name TEXT NOT NULL DEFAULT '',
+            stage TEXT NOT NULL DEFAULT 'in_queue'
+                CHECK(stage IN ('in_queue', 'printing')),
+            sort_order INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+        """
+    )
+
     _migrate_images_table(conn)
 
 

@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="static/css/app.css?v=13" />
+  <link rel="stylesheet" href="static/css/app.css?v=14" />
 </head>
 <body>
   <div class="app-bg" aria-hidden="true"></div>
@@ -26,6 +26,7 @@
       <button type="button" data-view="new" class="active">New Item</button>
       <button type="button" data-view="library">Library</button>
       <button type="button" data-view="production">Production</button>
+      <button type="button" data-view="print-queue">Print Queue</button>
       <button type="button" data-view="inventory">Filament</button>
       <button type="button" data-view="settings">Square Catalog</button>
     </nav>
@@ -319,6 +320,61 @@
       </div>
     </section>
 
+    <!-- PRINT QUEUE -->
+    <section id="view-print-queue" class="panel">
+      <div class="card">
+        <h2>Print Queue</h2>
+        <p class="field-hint" style="margin-top: 0;">
+          Track what to print and in what order. Use your design name for the item, and the Etsy order name so you know who it belongs to.
+        </p>
+        <div class="print-queue-toolbar">
+          <p id="print-queue-summary" class="print-queue-summary">—</p>
+          <div class="print-queue-filters" role="group" aria-label="Filter by stage">
+            <button type="button" class="btn btn-secondary btn-sm print-queue-filter active" data-filter="all">All</button>
+            <button type="button" class="btn btn-secondary btn-sm print-queue-filter" data-filter="in_queue">In queue</button>
+            <button type="button" class="btn btn-secondary btn-sm print-queue-filter" data-filter="printing">Printing</button>
+          </div>
+        </div>
+
+        <form id="print-queue-add-form" class="print-queue-add-form">
+          <div class="grid-3">
+            <div>
+              <label for="print-queue-item-name">Item name</label>
+              <input id="print-queue-item-name" type="text" placeholder="Serik pot" required />
+            </div>
+            <div>
+              <label for="print-queue-order-name">Etsy order name</label>
+              <input id="print-queue-order-name" type="text" placeholder="Jane D. — #1234567890" />
+            </div>
+            <div class="print-queue-add-actions">
+              <label>&nbsp;</label>
+              <button type="submit" class="btn btn-primary">Add to queue</button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div id="print-queue-cards" class="mobile-card-list print-queue-card-list"></div>
+
+      <div class="card table-scroll desktop-table-wrap" style="padding: 0; overflow: hidden;">
+        <table class="library-table print-queue-table">
+          <thead>
+            <tr>
+              <th class="print-queue-order-col">#</th>
+              <th>Item</th>
+              <th>Order</th>
+              <th>Stage</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="print-queue-body"></tbody>
+        </table>
+      </div>
+      <div id="print-queue-empty" class="empty-state hidden">
+        <p>Nothing in the queue yet. Add an item above when a new order comes in.</p>
+      </div>
+    </section>
+
     <!-- FILAMENT INVENTORY -->
     <section id="view-inventory" class="panel">
       <div class="card">
@@ -448,6 +504,10 @@
       <span class="nav-icon" aria-hidden="true">$</span>
       <span class="nav-label">Costs</span>
     </button>
+    <button type="button" data-view="print-queue">
+      <span class="nav-icon" aria-hidden="true">⎙</span>
+      <span class="nav-label">Queue</span>
+    </button>
     <button type="button" data-view="inventory">
       <span class="nav-icon" aria-hidden="true">◉</span>
       <span class="nav-label">Filament</span>
@@ -458,6 +518,6 @@
     </button>
   </nav>
 
-  <script src="static/js/app.js?v=28"></script>
+  <script src="static/js/app.js?v=29"></script>
 </body>
 </html>

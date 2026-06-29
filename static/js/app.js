@@ -13,6 +13,8 @@ const state = {
   filamentSpools: [],
   filamentSort: { column: "quantity", direction: "asc" },
   filamentOrderCopy: "",
+  printQueueItems: [],
+  printQueueFilter: "all",
   openaiEnvConfigured: false,
 };
 
@@ -155,6 +157,10 @@ function switchView(view) {
     $("#view-inventory").classList.add("active");
     $$(`button[data-view="inventory"]`).forEach((b) => b.classList.add("active"));
     loadFilamentInventory();
+  } else if (view === "print-queue") {
+    $("#view-print-queue").classList.add("active");
+    $$(`button[data-view="print-queue"]`).forEach((b) => b.classList.add("active"));
+    loadPrintQueue();
   } else if (view === "settings") {
     $("#view-settings").classList.add("active");
     $$(`button[data-view="settings"]`).forEach((b) => b.classList.add("active"));
@@ -2065,6 +2071,343 @@ function updateFilamentSortIndicators() {
     }
   });
 }
+
+function printQueueStageLabel(stage) {
+  return stage === "printing" ? "Printing" : "In queue";
+}
+
+function filteredPrintQueueItems() {
+  if (state.printQueueFilter === "all") return state.printQueueItems;
+  return state.printQueueItems.filter((item) => item.stage === state.printQueueFilter);
+}
+
+function printQueueRowHtml(item, position, canMoveUp, canMoveDown) {
+  const stage = item.stage;
+  const advanceBtn =
+    stage === "in_queue"
+      ? `<button type="button" class="btn btn-secondary btn-sm print-queue-advance" data-id="${item.id}" data-stage="printing">Start printing</button>`
+      : `<button type="button" class="btn btn-primary btn-sm print-queue-done" data-id="${item.id}">Done</button>`;
+  const revertBtn =
+    stage === "printing"
+      ? `<button type="button" class="btn btn-secondary btn-sm print-queue-advance" data-id="${item.id}" data-stage="in_queue">Back to queue</button>`
+      : "";
+
+  return `
+    <tr data-id="${item.id}">
+      <td class="print-queue-order-col">${position}</td>
+      <td>
+        <input
+          type="text"
+          class="print-queue-item-input"
+          data-id="${item.id}"
+          data-field="item_name"
+          data-original="${escapeAttr(item.item_name)}"
+          value="${escapeAttr(item.item_name)}"
+          aria-label="Item name"
+        />
+      </td>
+      <td>
+        <input
+          type="text"
+          class="print-queue-order-input"
+          data-id="${item.id}"
+          data-field="order_name"
+          data-original="${escapeAttr(item.order_name || "")}"
+          value="${escapeAttr(item.order_name || "")}"
+          placeholder="Etsy order"
+          aria-label="Etsy order name"
+        />
+      </td>
+      <td><span class="status-badge ${stage}">${printQueueStageLabel(stage)}</span></td>
+      <td>
+        <div class="print-queue-row-actions">
+          <button type="button" class="btn btn-secondary btn-sm print-queue-move" data-id="${item.id}" data-direction="up" title="Move up" ${canMoveUp ? "" : "disabled"}>↑</button>
+          <button type="button" class="btn btn-secondary btn-sm print-queue-move" data-id="${item.id}" data-direction="down" title="Move down" ${canMoveDown ? "" : "disabled"}>↓</button>
+          ${advanceBtn}
+          ${revertBtn}
+          <button type="button" class="link-btn print-queue-remove" data-id="${item.id}">Remove</button>
+        </div>
+      </td>
+    </tr>
+  `;
+}
+
+function printQueueCardHtml(item, position, canMoveUp, canMoveDown) {
+  const stage = item.stage;
+  const advanceBtn =
+    stage === "in_queue"
+      ? `<button type="button" class="btn btn-secondary print-queue-advance" data-id="${item.id}" data-stage="printing">Start printing</button>`
+      : `<button type="button" class="btn btn-primary print-queue-done" data-id="${item.id}">Done</button>`;
+  const revertBtn =
+    stage === "printing"
+      ? `<button type="button" class="btn btn-secondary print-queue-advance" data-id="${item.id}" data-stage="in_queue">Back to queue</button>`
+      : "";
+
+  return `
+    <article class="print-queue-card" data-id="${item.id}">
+      <div class="print-queue-card-header">
+        <span class="print-queue-position">#${position}</span>
+        <span class="status-badge ${stage}">${printQueueStageLabel(stage)}</span>
+      </div>
+      <input
+        type="text"
+        class="print-queue-item-input"
+        data-id="${item.id}"
+        data-field="item_name"
+        data-original="${escapeAttr(item.item_name)}"
+        value="${escapeAttr(item.item_name)}"
+        aria-label="Item name"
+      />
+      <input
+        type="text"
+        class="print-queue-order-input"
+        data-id="${item.id}"
+        data-field="order_name"
+        data-original="${escapeAttr(item.order_name || "")}"
+        value="${escapeAttr(item.order_name || "")}"
+        placeholder="Etsy order name"
+        aria-label="Etsy order name"
+      />
+      <div class="print-queue-card-actions">
+        <button type="button" class="btn btn-secondary print-queue-move" data-id="${item.id}" data-direction="up" aria-label="Move up" ${canMoveUp ? "" : "disabled"}>↑</button>
+        <button type="button" class="btn btn-secondary print-queue-move" data-id="${item.id}" data-direction="down" aria-label="Move down" ${canMoveDown ? "" : "disabled"}>↓</button>
+        ${advanceBtn}
+        ${revertBtn}
+      </div>
+      <button type="button" class="link-btn print-queue-remove" data-id="${item.id}">Remove</button>
+    </article>
+  `;
+}
+
+function bindPrintQueueRowEvents(root) {
+  if (!root) return;
+
+  root.querySelectorAll(".print-queue-move").forEach((btn) => {
+    btn.addEventListener("click", () => movePrintQueueItem(btn.dataset.id, btn.dataset.direction));
+  });
+  root.querySelectorAll(".print-queue-advance").forEach((btn) => {
+    btn.addEventListener("click", () => updatePrintQueueStage(btn.dataset.id, btn.dataset.stage));
+  });
+  root.querySelectorAll(".print-queue-done").forEach((btn) => {
+    btn.addEventListener("click", () => completePrintQueueItem(btn.dataset.id));
+  });
+  root.querySelectorAll(".print-queue-remove").forEach((btn) => {
+    btn.addEventListener("click", () => removePrintQueueItem(btn.dataset.id));
+  });
+  root.querySelectorAll(".print-queue-item-input, .print-queue-order-input").forEach((input) => {
+    const save = () => savePrintQueueField(input);
+    input.addEventListener("blur", save);
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        input.blur();
+      }
+      if (e.key === "Escape") {
+        input.value = input.dataset.original;
+        input.blur();
+      }
+    });
+  });
+}
+
+function renderPrintQueue() {
+  const tbody = $("#print-queue-body");
+  const cards = $("#print-queue-cards");
+  const empty = $("#print-queue-empty");
+  const summary = $("#print-queue-summary");
+  const allItems = state.printQueueItems;
+  const items = filteredPrintQueueItems();
+  const inQueueCount = allItems.filter((item) => item.stage === "in_queue").length;
+  const printingCount = allItems.filter((item) => item.stage === "printing").length;
+
+  if (summary) {
+    summary.textContent = `${inQueueCount} in queue · ${printingCount} printing`;
+  }
+
+  $$(".print-queue-filter").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.filter === state.printQueueFilter);
+  });
+
+  if (!items.length) {
+    if (tbody) tbody.innerHTML = "";
+    if (cards) cards.innerHTML = "";
+    empty.classList.remove("hidden");
+    return;
+  }
+
+  empty.classList.add("hidden");
+
+  const stageGroups = {};
+  items.forEach((item) => {
+    if (!stageGroups[item.stage]) stageGroups[item.stage] = [];
+    stageGroups[item.stage].push(item);
+  });
+
+  const rows = items.map((item) => {
+    const group = stageGroups[item.stage] || [];
+    const idx = group.findIndex((row) => row.id === item.id);
+    const position = idx >= 0 ? idx + 1 : "—";
+    const canMoveUp = idx > 0;
+    const canMoveDown = idx >= 0 && idx < group.length - 1;
+    return printQueueRowHtml(item, position, canMoveUp, canMoveDown);
+  });
+
+  if (tbody) {
+    tbody.innerHTML = rows.join("");
+    bindPrintQueueRowEvents(tbody);
+  }
+
+  if (cards) {
+    cards.innerHTML = items
+      .map((item) => {
+        const group = stageGroups[item.stage] || [];
+        const idx = group.findIndex((row) => row.id === item.id);
+        const position = idx >= 0 ? idx + 1 : "—";
+        const canMoveUp = idx > 0;
+        const canMoveDown = idx >= 0 && idx < group.length - 1;
+        return printQueueCardHtml(item, position, canMoveUp, canMoveDown);
+      })
+      .join("");
+    bindPrintQueueRowEvents(cards);
+  }
+}
+
+async function loadPrintQueue() {
+  hideAlert();
+  const res = await fetch(apiUrl("/api/print-queue"));
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || "Could not load print queue");
+  state.printQueueItems = data.items || [];
+  renderPrintQueue();
+}
+
+async function savePrintQueueField(input) {
+  const itemId = input.dataset.id;
+  const field = input.dataset.field;
+  const original = input.dataset.original || "";
+  const next = input.value.trim();
+
+  if (field === "item_name" && !next) {
+    showAlert("Item name is required");
+    input.value = original;
+    return;
+  }
+  if (next === original) {
+    input.value = original;
+    return;
+  }
+
+  hideAlert();
+  input.disabled = true;
+  try {
+    const res = await fetch(apiUrl(`/api/print-queue/${itemId}`), {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ [field]: next }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Could not update item");
+    const idx = state.printQueueItems.findIndex((item) => item.id === itemId);
+    if (idx >= 0) state.printQueueItems[idx] = data;
+    input.dataset.original = data[field] || "";
+    input.value = data[field] || "";
+    renderPrintQueue();
+  } catch (err) {
+    showAlert(err.message);
+    input.value = original;
+  } finally {
+    input.disabled = false;
+  }
+}
+
+async function updatePrintQueueStage(itemId, stage) {
+  hideAlert();
+  try {
+    const res = await fetch(apiUrl(`/api/print-queue/${itemId}`), {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ stage }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Could not update stage");
+    await loadPrintQueue();
+  } catch (err) {
+    showAlert(err.message);
+  }
+}
+
+async function movePrintQueueItem(itemId, direction) {
+  hideAlert();
+  try {
+    const res = await fetch(apiUrl(`/api/print-queue/${itemId}/move`), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ direction }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Could not reorder queue");
+    await loadPrintQueue();
+  } catch (err) {
+    showAlert(err.message);
+  }
+}
+
+async function completePrintQueueItem(itemId) {
+  const item = state.printQueueItems.find((row) => row.id === itemId);
+  const label = item?.item_name || "this item";
+  if (!window.confirm(`Mark "${label}" as done and remove from the queue?`)) return;
+  await removePrintQueueItem(itemId, { skipConfirm: true });
+}
+
+async function removePrintQueueItem(itemId, { skipConfirm = false } = {}) {
+  const item = state.printQueueItems.find((row) => row.id === itemId);
+  const label = item?.item_name || "this item";
+  if (!skipConfirm && !window.confirm(`Remove "${label}" from the print queue?`)) return;
+
+  hideAlert();
+  try {
+    const res = await fetch(apiUrl(`/api/print-queue/${itemId}`), { method: "DELETE" });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Could not remove item");
+    await loadPrintQueue();
+  } catch (err) {
+    showAlert(err.message);
+  }
+}
+
+$$(".print-queue-filter").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    state.printQueueFilter = btn.dataset.filter;
+    renderPrintQueue();
+  });
+});
+
+$("#print-queue-add-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  hideAlert();
+  const itemName = $("#print-queue-item-name").value.trim();
+  const orderName = $("#print-queue-order-name").value.trim();
+  const btn = e.submitter || e.target.querySelector('button[type="submit"]');
+  if (btn) btn.disabled = true;
+
+  try {
+    const res = await fetch(apiUrl("/api/print-queue"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ item_name: itemName, order_name: orderName }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Could not add to queue");
+    $("#print-queue-item-name").value = "";
+    $("#print-queue-order-name").value = "";
+    showAlert(`Added "${itemName}" to the queue.`, "info");
+    await loadPrintQueue();
+  } catch (err) {
+    showAlert(err.message);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+});
 
 function renderFilamentInventoryTable() {
   const sorted = sortFilamentSpools(state.filamentSpools);

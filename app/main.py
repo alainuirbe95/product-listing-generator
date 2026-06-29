@@ -46,6 +46,13 @@ from app.repository_filament import (
     list_filament_spools,
     update_filament_color_name,
 )
+from app.repository_print_queue import (
+    add_print_queue_item,
+    delete_print_queue_item,
+    list_print_queue,
+    move_print_queue_item,
+    update_print_queue_item,
+)
 from app.services.openai_auth import is_openai_configured, resolve_openai_api_key
 from app.services.image_gen import generate_studio_image, generate_styled_image
 from app.services.production import (
@@ -653,6 +660,68 @@ async def api_update_filament_spool(spool_id: str, request: Request) -> dict[str
 def api_delete_filament_spool(spool_id: str) -> dict[str, bool]:
     if not delete_filament_spool(spool_id):
         raise HTTPException(status_code=404, detail="Spool not found")
+    return {"deleted": True}
+
+
+@app.get("/api/print-queue")
+def api_list_print_queue() -> dict[str, Any]:
+    items = list_print_queue()
+    counts = {
+        "in_queue": sum(1 for i in items if i["stage"] == "in_queue"),
+        "printing": sum(1 for i in items if i["stage"] == "printing"),
+    }
+    return {"items": items, "counts": counts}
+
+
+@app.post("/api/print-queue")
+async def api_add_print_queue_item(request: Request) -> dict[str, Any]:
+    payload: dict[str, Any] = await request.json()
+    item_name = str(payload.get("item_name") or "").strip()
+    order_name = str(payload.get("order_name") or "").strip()
+    try:
+        item = add_print_queue_item(item_name, order_name)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return item
+
+
+@app.patch("/api/print-queue/{item_id}")
+async def api_update_print_queue_item(item_id: str, request: Request) -> dict[str, Any]:
+    payload: dict[str, Any] = await request.json()
+    item_name = payload.get("item_name")
+    order_name = payload.get("order_name")
+    stage = payload.get("stage")
+    try:
+        item = update_print_queue_item(
+            item_id,
+            item_name=str(item_name).strip() if item_name is not None else None,
+            order_name=str(order_name).strip() if order_name is not None else None,
+            stage=str(stage).strip() if stage is not None else None,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if not item:
+        raise HTTPException(status_code=404, detail="Queue item not found")
+    return item
+
+
+@app.post("/api/print-queue/{item_id}/move")
+async def api_move_print_queue_item(item_id: str, request: Request) -> dict[str, Any]:
+    payload: dict[str, Any] = await request.json()
+    direction = str(payload.get("direction") or "").strip()
+    try:
+        item = move_print_queue_item(item_id, direction)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if not item:
+        raise HTTPException(status_code=404, detail="Queue item not found")
+    return item
+
+
+@app.delete("/api/print-queue/{item_id}")
+def api_delete_print_queue_item(item_id: str) -> dict[str, bool]:
+    if not delete_print_queue_item(item_id):
+        raise HTTPException(status_code=404, detail="Queue item not found")
     return {"deleted": True}
 
 
